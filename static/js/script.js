@@ -179,6 +179,7 @@
                     $('.lose .count').text(countWon);
                     $('.game').fadeOut(500);
                     await wait(500);
+                    countWon = 0;
                     gameItems.reset();
                     resetVS();
                 }
