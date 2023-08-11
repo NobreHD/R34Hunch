@@ -212,7 +212,7 @@
             tags.push(item.tag);
             if (tags.length > 30) tags.shift();
             items.push(item);
-            items.shift();
+            if (items.length > 30) items.shift();
             return itemToElement(item, 1);
         }
 
