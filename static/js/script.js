@@ -105,6 +105,7 @@
         const get = async () => {
             const ids = items.map(item => item.id);
             let response = null;
+            let streamer_mode = cookieStorage.get('stream-mode') == 'true';
             while(true){
                 response = await fetch('https://api.nobrehd.pt/r34', {
                     method: 'POST',
@@ -114,7 +115,7 @@
                     body: JSON.stringify({
                         tags,
                         ids,
-                        stream_mode: cookieStorage.get('stream-mode') == 'true'
+                        streamer_mode
                     })
                 });
                 if(response.status == 200) break;
