@@ -1,16 +1,23 @@
 (async () => {
     const page = $('.web');
-    const start = $('.start');
-    const startBtn = $('#start-btn');
-    const streamMode = $('#stream-mode');
-    const gameSlider = $('.game-slider');
-    const gameContainer = $('.game-container');
 
-    const cookieStorage = (() => {
-        const set = (key, value) => {
-            document.cookie = `${key}=${value}; path=/`;
+    // Utils
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const smoothCount = async (amount, callback) => {
+        let exponent = parseInt(amount.toExponential().split('+')[1]);
+        let current = 0;
+        while(current < amount){
+            current += Math.ceil(amount / (exponent * 4));
+            if(current > amount) current = amount;
+            callback(current);
+            await wait(30);
         }
+    }
 
+    // Cookies
+    const cookieStorage = (() => {
+        const set = (key, value) => document.cookie = `${key}=${value}; path=/`;
+        
         const get = (key) => {
             const cookies = document.cookie.split(';');
             for(let cookie of cookies){
@@ -26,228 +33,221 @@
         }
     })();
 
-    if (cookieStorage.get('warning') == undefined) {
-        $('.warning').show();
-    }
+    // VS Control
+    const vs = (()=>{
+        const vsElement = page.find('.vs');
+        const vsText = vsElement.find('span');
 
-    $('#continue-btn').click(() => {
-        cookieStorage.set('warning', true);
-        $('.warning').fadeOut(500);
-    });
-
-    $('#restart-btn').click(() => {
-        $('.game').fadeIn(500);
-    });
-
-    let countWon = 0;
-
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    const getSize = (count) => {
-        let countCopy = count;
-        let size = 0;
-        while(countCopy > 1){
-            countCopy /= 10;
-            size++;
-        }
-        return size;
-    }
-
-    const countUpTo = async (count, element) => {
-        let countUp = 0;
-        let size = getSize(count);
-        while(countUp < count){
-            countUp += Math.ceil(count / (size * 4));
-            if(countUp > count) countUp = count;
-            await wait(30);
-            element.text(countUp.toLocaleString());
-        }
-    }
-
-    const showVS = (won) => {
-        const vs = $('.vs');
-        const vsSpan = vs.find('span');
-        if(won) {
-            vs.addClass('correct');
-            vsSpan.text('✔');
-        }else{
-            vs.addClass('wrong');
-            vsSpan.text('✖');                 
-        }
-    }
-
-    const resetVS = () => {
-        const vs = $('.vs');
-        vs.removeClass('correct');
-        vs.removeClass('wrong');
-        vs.find('span').text('VS');
-    }
-
-    if(cookieStorage.get('stream-mode') == 'true'){
-        $("#stream-mode").prop('checked', true);
-        page.addClass('blur');
-    }
-
-    startBtn.click(() => {
-        start.fadeOut(500);
-    });
-
-    if ($(window).width() < 768) {
-        startBtn.addClass('disabled');
-        startBtn.text('Please use a bigger screen .-.');
-        startBtn.off('click');
-    }
-
-    const gameItems = await (async () => {
-        let items = [];
-        let tags = [];
-
-        const get = async () => {
-            const ids = items.map(item => item.id);
-            let response = null;
-            let streamer_mode = cookieStorage.get('stream-mode') == 'true';
-            while(true){
-                response = await fetch('https://api.nobrehd.pt/r34', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        tags,
-                        ids,
-                        streamer_mode
-                    })
-                });
-                if(response.status == 200) break;
-                await wait(1000);
-            }
-            return await response.json();
-        }
-
-        const itemToElement = (item, i) => {
-            const extra = i == -1 ? ` 
-                <div class="pop flexccc">
-                    <p class="count">${item.count.toLocaleString()}</p>
-                    <span>posts</span>
-                </div>` : `
-                <div class="pop hidden flexccc">
-                    <p class="count"></p>
-                    <span>posts</span>
-                </div>
-                <div class="ask">
-                    <div class="options flexccc">
-                        <div class="option" data-value="true">More ▲</div>
-                        <div class="option" data-value="false">Less ▼</div>
-                    </div>
-                    <span>posts than ${items[i].tag.replace(/_/g, ' ')}</span>
-                </div>`;
-
-            const links = [...item.source]
-            links.push(item.url)
-            const source = links.map(source => `<a href="${source}" target="_blank">${source}</a>`);
-
-            const element = $(`<div class="item">
-                <img src="${item.image}" alt="">
-                <div class="item-data full-abs flexccc">
-                    <p>${item.tag.replace(/_/g, ' ')}</p>
-                    <span>has</span>
-                    ${extra}
-                </div>
-                <div class="item-source">
-                    ${source.join('<br>')}
-                </div>
-            </div>`);
-
-            element.find(".option").click(async (event)=>{
-                element.find('.ask').remove();
-                element.find('.pop').removeClass('hidden');
-                await countUpTo(item.count, element.find('.count'));
-                const won = gameItems.check(event.target.dataset.value == 'true');
-                await wait(1000);
-                showVS(won);
-                await wait(1000);
-                if (won) {
-                    countWon++;
-                    let element = await gameItems.newItem();
-                    gameContainer.animate({
-                        marginLeft: '-50%'
-                    }, 300, () => {
-                        gameContainer.css('margin-left', '0');
-                        gameContainer.append(element);
-                        gameContainer.children().first().remove();
-                        resetVS();
-                    });
-                } else {
-                    $('.lose .count').text(countWon);
-                    $('.game').fadeOut(500);
-                    await wait(500);
-                    countWon = 0;
-                    gameItems.reset();
-                    resetVS();
-                }
-            });
-
-            return element;
-        }
-
-        const load = async () => {
-            for(let i = 0; i < 3; i++){
-                let data = await get();
-                items.push(data);
-                gameContainer.append(itemToElement(data, i-1));
+        const showResult = (result) => {
+            if (result) {
+                vsElement.addClass('correct');
+                vsText.text('✔');
+            } else {
+                vsElement.addClass('wrong');
+                vsText.text('✘');
             }
         }
 
-        await load();
-
-        const reset = async () => {
-            items = [];
-            tags = [];
-            gameContainer.empty();
-            await load();
-        }
-
-        const newItem = async () => {
-            item = await get();
-            tags.push(item.tag);
-            if (tags.length > 30) tags.shift();
-            items.push(item);
-            if (items.length > 30) items.shift();
-            return itemToElement(item, 1);
-        }
-
-        const check = (guess) => {
-            if (!guess) return items[0].count >= items[1].count;
-            else return items[0].count <= items[1].count;
+        const reset = () => {
+            vsElement.removeClass('correct wrong');
+            vsText.text('VS');
         }
 
         return {
-            newItem,
-            check,
+            showResult,
             reset
         }
     })();
 
-    streamMode.on('change', () => {
-        if(streamMode.is(':checked')){
-            page.addClass('blur');
-            cookieStorage.set('stream-mode', true);
-        }else{
-            page.removeClass('blur');
-            cookieStorage.set('stream-mode', false);
+    // Streamer Mode
+    (()=>{
+        const streamerModeElement = page.find('#stream-mode');
+        
+        const set = (value) => {
+            cookieStorage.set('stream-mode', value);
+            if(value) page.addClass('blur');
+            else page.removeClass('blur');
         }
-    });
 
-    $('.vs').click(async() => {
-        let element = await gameItems.newItem();
-        gameContainer.animate({
-            marginLeft: '-50%'
-        }, 300, () => {
-            gameContainer.css('margin-left', '0');
-            gameContainer.append(element);
-            gameContainer.children().first().remove();
+        streamerModeElement.on("change", () => {
+            set(streamerModeElement.is(':checked'));
         });
-    });
 
+        if(cookieStorage.get('stream-mode') == 'true'){
+            streamerModeElement.prop('checked', true);
+            set(true);
+        }
+    })();
+
+    // Game Control
+    const game = (()=>{
+        // Game Elements
+        const gameContainer = page.find('.game-container');
+
+        // Game Variables
+        let score = 0;
+        let previousTags = [];
+        let currentItems = [];
+        let loading = false;
+
+        // API Access
+        const getGameEntry = async () => {
+            let response = null;
+            const streamer_mode = cookieStorage.get('stream-mode') == 'true';
+            const ids = currentItems.map(item => item.id);
+            while(response == null){
+                try{
+                    response = await fetch('https://api.nobrehd.pt/r34', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            tags: previousTags,
+                            ids,
+                            streamer_mode
+                        })
+                    });
+                }catch(e){
+                    console.error(e);
+                    await wait(500);
+                }
+            }
+            return response.json();
+        }
+
+        // Convert to HTML
+        const convertToHTML = (item, i) => {
+            const countHTML = `<p class="count">${(i !== 0)?'':item.count.toLocaleString()}</p>`;	
+            const extraHTML = (i !== 0)?`
+                <div class="ask">
+                        <div class="options flexccc">
+                        <div class="option" data-value="true">More ▲</div>
+                        <div class="option" data-value="false">Less ▼</div>
+                    </div>
+                    <span>posts than ${currentItems[i-1].tag.replace(/_/g, ' ')}</span>
+                </div>`:'';
+            const sourceHTML = [...item.source, item.url].map(source => `<a href="${source}" target="_blank">${source}</a>`).join('<br>');
+            return `
+                <div class="item">
+                    <img src="${item.image}" alt="${item.tag}">
+                    <div class="item-data full-abs flexccc">
+                        <p>${item.tag.replace(/_/g, ' ')}</p>
+                        <span>has</span>
+                        <div class="pop flexccc ${i === 0?'':'hidden'}">
+                            ${countHTML}
+                        </div>
+                        ${extraHTML}    
+                    </div>
+                    <div class="item-source">${sourceHTML}</div>
+                </div>
+            `;
+        }
+
+        // Convert to Element
+        const convertToElement = (item, i) => {
+            const element = $(convertToHTML(item, i));
+            element.find('.option').click(async (e) => {
+                element.find(".ask").remove();
+                element.find(".pop").removeClass('hidden');
+                await smoothCount(item.count, (current) => {
+                    element.find('.count').text(current.toLocaleString());
+                });
+                let result = $(e.target).data('value') 
+                    ? currentItems[0].count <= item.count 
+                    : currentItems[0].count >= item.count;
+                vs.showResult(result);
+                await wait(1000);
+                if(result) await game.next();
+                else await game.reset();
+            });
+            return element;
+        }
+
+        // Next
+        const next = async () => {
+            score++;
+            const entry = await getGameEntry();
+            previousTags.push(entry.tag);
+            if (previousTags.length > 40) previousTags.shift();
+            currentItems.push(entry);
+            currentItems.shift();
+            const element = convertToElement(entry, 2);
+            gameContainer.animate({
+                marginLeft: '-50%'
+            }, 500, () => {
+                gameContainer.css('margin-left', '0');
+                gameContainer.append(element);
+                gameContainer.children().first().remove();
+                vs.reset();
+            });
+        }
+
+        // Reset
+        const reset = async () => {
+            page.find('.lose .count').text(score);
+            page.find('.game').fadeOut(500);
+            vs.reset();
+            score = 0;
+            previousTags = [];
+            currentItems = [];
+            gameContainer.empty();
+            await game.load();
+        }
+
+        // Load
+        const load = async () => {
+            loading = true;
+            for(let i = 0; i < 3; i++){
+                const entry = await getGameEntry();
+                previousTags.push(entry.tag);
+                currentItems.push(entry);
+                gameContainer.append(convertToElement(entry, i));
+            }
+            loading = false;
+        }
+
+        // Wait for load
+        const waitForLoad = async () => {
+            while(loading) await wait(100);
+        }
+
+        return {
+            next,
+            reset,
+            load,
+            waitForLoad
+        }
+    })();
+
+    // Buttons
+    (()=>{
+        const startButton = page.find('#start-btn');
+
+        if ($(window).width() < 768) {
+            startButton.text('Still not mobile friendly');
+            startButton.prop('disabled', true);
+        } else {
+            startButton.click(async () => { 
+                await game.waitForLoad();
+                $('.start').fadeOut(500);
+            });
+        }
+
+        page.find('#restart-btn').click(async () => {
+            await game.waitForLoad();
+            page.find('.game').fadeIn(500);
+        });
+
+        $('#continue-btn').click(() => {
+            cookieStorage.set('warning', 'true');
+            $('.warning').fadeOut(500);
+        });
+    })();
+
+    // Load
     $('.loading').fadeOut(500);
+    if(cookieStorage.get('warning') != 'true') $('.warning').show();
+
+    await game.load();
 })();
