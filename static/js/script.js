@@ -113,7 +113,8 @@
                     },
                     body: JSON.stringify({
                         tags,
-                        ids
+                        ids,
+                        stream_mode: cookieStorage.get('stream-mode') == 'true'
                     })
                 });
                 if(response.status == 200) break;
