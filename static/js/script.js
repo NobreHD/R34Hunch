@@ -92,12 +92,11 @@
 
         // API Access
         const getGameEntry = async () => {
-            let response = null;
             const streamer_mode = cookieStorage.get('stream-mode') == 'true';
             const ids = currentItems.map(item => item.id);
-            while(response == null){
+            while(true){
                 try{
-                    response = await fetch('https://api.nobrehd.pt/r34', {
+                    let response = await fetch('https://api.nobrehd.pt/r34', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -108,12 +107,12 @@
                             streamer_mode
                         })
                     });
+                    return await response.json();
                 }catch(e){
                     console.error(e);
                     await wait(500);
                 }
             }
-            return response.json();
         }
 
         // Convert to HTML
