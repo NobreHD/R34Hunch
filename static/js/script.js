@@ -122,7 +122,7 @@
                 <div class="ask">
                         <div class="options flexccc">
                         <div class="option" data-value="true">More ▲</div>
-                        <div class="option" data-value="false">Less ▼</div>
+                        <div class="option" data-value="false">Fewer ▼</div>
                     </div>
                     <span>posts than ${currentItems[i-1].tag.replace(/_/g, ' ')}</span>
                 </div>`:'';
