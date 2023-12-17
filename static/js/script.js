@@ -129,7 +129,7 @@
             const sourceHTML = [...item.source, item.url].map(source => `<a href="${source}" target="_blank">${source}</a>`).join('<br>');
             return `
                 <div class="item">
-                    <img src="${item.image}" alt="${item.tag}">
+                    <img src="${item.image}" alt="${item.tag}" fetchpriority="low">
                     <div class="item-data full-abs flexccc">
                         <p>${item.tag.replace(/_/g, ' ')}</p>
                         <span>has</span>
