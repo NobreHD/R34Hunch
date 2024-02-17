@@ -115,8 +115,25 @@
             }
         }
 
+        const staticImage = async (url) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL());
+                }
+                img.onerror = () => reject();
+                img.src = url;
+            });
+        }
+
         // Convert to HTML
-        const convertToHTML = (item, i) => {
+        const convertToHTML = async (item, i) => {
+            const streamer_mode = cookieStorage.get('stream-mode') == 'true';
             const countHTML = `<p class="count">${(i !== 0)?'':item.count.toLocaleString()}</p>`;	
             const extraHTML = (i !== 0)?`
                 <div class="ask">
@@ -126,10 +143,11 @@
                     </div>
                     <span>posts than ${currentItems[i-1].tag.replace(/_/g, ' ')}</span>
                 </div>`:'';
-            const sourceHTML = [...item.source, item.url].map(source => `<a href="${source}" target="_blank">${source}</a>`).join('<br>');
+            const sourceHTML = (streamer_mode) ? "" : [...item.source, item.url].map(source => `<a href="${source}" target="_blank">${source}</a>`).join('<br>');
+            const imageURL = (streamer_mode) ? await staticImage(item.image) : item.image;
             return `
                 <div class="item">
-                    <img src="${item.image}" alt="${item.tag}" fetchpriority="low">
+                    <img src="${imageURL}" alt="${item.tag}" fetchpriority="low">
                     <div class="item-data full-abs flexccc">
                         <p>${item.tag.replace(/_/g, ' ')}</p>
                         <span>has</span>
@@ -144,8 +162,8 @@
         }
 
         // Convert to Element
-        const convertToElement = (item, i) => {
-            const element = $(convertToHTML(item, i));
+        const convertToElement = async (item, i) => {
+            const element = $(await convertToHTML(item, i););
             element.find('.option').click(async (e) => {
                 element.find(".ask").remove();
                 element.find(".pop").removeClass('hidden');
@@ -171,7 +189,7 @@
             if (previousTags.length > 40) previousTags.shift();
             currentItems.push(entry);
             currentItems.shift();
-            const element = convertToElement(entry, 2);
+            const element = await convertToElement(entry, 2);
             gameContainer.animate({
                 marginLeft: '-50%'
             }, 500, () => {
@@ -201,7 +219,7 @@
                 const entry = await getGameEntry();
                 previousTags.push(entry.tag);
                 currentItems.push(entry);
-                gameContainer.append(convertToElement(entry, i));
+                gameContainer.append(await convertToElement(entry, i));
             }
             loading = false;
         }

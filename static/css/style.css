@@ -4,6 +4,7 @@
     --accent: #AAE5A4;
     --accent2: #000;
     --default-padding: 0;
+    --streamer-mode: blur(48px);
 }
 
 *{
@@ -80,7 +81,7 @@ h1, h2{
 }
 
 .web.blur img{
-    filter: brightness(0.5) blur(36px);
+    filter: brightness(0.5) var(--streamer-mode);
 }
 
 .start{
