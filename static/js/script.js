@@ -163,7 +163,7 @@
 
         // Convert to Element
         const convertToElement = async (item, i) => {
-            const element = $(await convertToHTML(item, i););
+            const element = $(await convertToHTML(item, i));
             element.find('.option').click(async (e) => {
                 element.find(".ask").remove();
                 element.find(".pop").removeClass('hidden');
