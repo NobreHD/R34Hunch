@@ -116,19 +116,21 @@
         }
 
         const staticImage = async (url) => {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    context.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL());
-                }
-                img.onerror = () => reject();
-                img.src = url;
-            });
+            return url;
+            // Fuck CORS 
+            // return new Promise((resolve, reject) => {
+            //     const img = new Image();
+            //     img.onload = () => {
+            //         const canvas = document.createElement('canvas');
+            //         const context = canvas.getContext('2d');
+            //         canvas.width = img.width;
+            //         canvas.height = img.height;
+            //         context.drawImage(img, 0, 0);
+            //         resolve(canvas.toDataURL());
+            //     }
+            //     img.onerror = () => reject();
+            //     img.src = url;
+            // });
         }
 
         // Convert to HTML
