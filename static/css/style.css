@@ -85,6 +85,14 @@ h1, h2{
     filter: brightness(0.5) var(--streamer-mode);
 }
 
+.web.no-images img{
+    filter: brightness(0);
+}
+
+.web.no-images item-source{
+    display: none;
+}
+
 .start{
     --default-padding: 20px;
     z-index: 5;

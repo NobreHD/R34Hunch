@@ -62,6 +62,7 @@
     // Streamer Mode
     (()=>{
         const streamerModeElement = page.find('#stream-mode');
+        let timer;
         
         const set = (value) => {
             cookieStorage.set('stream-mode', value);
@@ -70,6 +71,14 @@
         }
 
         streamerModeElement.on("change", () => {
+            if (timer) {
+                page.addClass('no-images');
+                return;
+            }
+            timer = setTimeout(() => {
+                clearTimeout(timer);
+                timer = null;
+            }, 500);
             set(streamerModeElement.is(':checked'));
         });
 
