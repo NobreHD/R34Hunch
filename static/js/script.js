@@ -62,6 +62,7 @@
     // Streamer Mode
     (()=>{
         const streamerModeElement = page.find('#stream-mode');
+        const label = page.find('#stream-mode-label');
         let timer;
         
         const set = (value) => {
@@ -73,6 +74,10 @@
         streamerModeElement.on("change", () => {
             if (timer) {
                 page.addClass('no-images');
+                streamerModeElement.prop('disabled', true);
+                streamerModeElement.off('change');
+                streamerModeElement.prop('checked', true);
+                label.text('No Image Mode');
                 return;
             }
             timer = setTimeout(() => {
